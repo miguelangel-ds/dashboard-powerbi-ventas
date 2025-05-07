@@ -1,0 +1,293 @@
+
+---
+title: "Análisis Exploratorio de Datos - Proyecto de Ventas"
+author: "Miguel C."
+date: "`r Sys.Date()`"
+output: html_document
+engine: knitr
+knit_engine_opts:
+  python:
+    engine.opts: []
+---
+
+```{r setup, include=FALSE}
+# Cargar librerías y dataset
+library(tidyverse)
+
+# Cargar dataset (asegúrate que el archivo esté en la misma carpeta que este .Rmd)
+df <- read.csv("C:/Users/migue/Downloads/ventas_tienda.csv")
+```
+
+# Introducción
+
+Este reporte presenta el análisis exploratorio de un dataset simulado de ventas con 2000 registros.  
+El objetivo es identificar patrones generales, detectar problemas de calidad y extraer insights iniciales para futuros análisis visuales y dashboards.
+
+---
+
+# Descripción del Dataset
+
+- **Registros:** 2000  
+- **Columnas:** 8  
+- **Variables clave:** `Precio_Unitario`, `Cantidad`, `Total_Venta`, `Producto`, `Categoria`, `Pais`
+
+---
+
+# Inspección Inicial
+
+```{r}
+# Estructura del dataframe
+str(df)
+summary(df)
+```
+
+## Observaciones Iniciales
+
+- El dataset contiene **2000 filas** y **8 columnas**.
+- Tipos de datos: `object` y `int64`, todos correctamente tipificados.
+- No se detectan valores nulos en ninguna columna.
+- Los valores numéricos están dentro de rangos razonables.
+- Dataset listo para análisis visual.
+
+---
+
+# Perfilado de Variables Numéricas
+
+```{r}
+summary(df[, c("Precio_Unitario", "Cantidad", "Total_Venta")])
+```
+
+## Observaciones
+
+- `Precio_Unitario` varía entre \$30 y \$800, con valores coherentes.
+- `Cantidad` se encuentra entre 1 y 5. No hay valores extremos.
+- `Total_Venta` es coherente con `Precio_Unitario * Cantidad`.
+- No se identifican **outliers** evidentes.
+
+---
+
+# 🏷️ Perfilado de Variables Categóricas
+
+```{r}
+table(df$Producto)
+table(df$Categoria)
+table(df$Pais)
+```
+
+## Observaciones
+
+- Nombres de productos y países correctamente escritos y normalizados.
+- Solo existen dos categorías: **Electrónica** y **Accesorios**, sin valores inválidos.
+
+---
+
+# 📈 Análisis Visual
+
+## Distribución de Precios Unitarios
+
+```{r}
+ggplot(df, aes(x = Precio_Unitario)) +
+  geom_histogram(binwidth = 50, fill = "#3c8dbc", color = "white") +
+  labs(title = "Distribución de Precios Unitarios", x = "Precio", y = "Frecuencia")
+```
+
+**Interpretación**  
+- La mayoría de los productos tienen un precio entre **\$50 y \$100**.
+- Se observan más frecuencias en precios medios y altos.
+- El precio de **\$50** presenta un pico notable.
+- No se detectan precios fuera de rango.
+
+---
+
+## Distribución del Total de Venta
+
+```{r}
+ggplot(df, aes(x = Total_Venta)) +
+  geom_histogram(binwidth = 100, fill = "#00c0ef", color = "white") +
+  labs(title = "Distribución del Total de Ventas", x = "Monto total", y = "Frecuencia")
+```
+
+**Interpretación**  
+- La mayoría de las ventas totales se encuentran entre **\$0 y \$500**.
+- A partir de \$500, las compras son mucho menos frecuentes.
+- Esto sugiere que los tickets altos no son comunes.
+
+---
+
+## Frecuencia por Categoría
+
+```{r}
+ggplot(df, aes(x = Categoria)) +
+  geom_bar(fill = "#f39c12") +
+  labs(title = "Frecuencia por Categoría de Producto", x = "Categoría", y = "Cantidad")
+```
+
+**Interpretación**  
+- La categoría **Electrónica** domina ligeramente sobre **Accesorios**.
+- No hay una diferencia marcada que indique una preferencia rotunda.
+- Se observa un comportamiento de compra equilibrado entre ambas categorías.
+
+---
+
+## Gráfica de dispersión: Cantidad vs Total de Venta
+
+```{r}
+library(ggplot2)
+
+ggplot(df, aes(x = Cantidad, y = Total_Venta)) +
+  geom_point(color = "#0073C2FF", alpha = 0.6) +
+  labs(
+    title = "Relación entre Cantidad Comprada y Total de Venta",
+    x = "Cantidad",
+    y = "Total de Venta ($)"
+  )
+```
+
+**Interpretación**  
+
+- Se observa un patrón lineal claro entre Cantidad y Total_Venta:
+a mayor cantidad comprada, mayor es el total de la venta.
+
+- Los puntos están alineados en franjas horizontales, lo cual indica que ciertos valores discretos de cantidad se repiten con frecuencia (por ejemplo: 1, 2, 3, 4, 5).
+
+- No se detectan valores anómalos ni agrupaciones inesperadas.
+
+- El comportamiento es coherente con lo esperado, confirmando que la lógica Total_Venta = Precio_Unitario × Cantidad se cumple correctamente en los datos.
+
+---
+
+## Total de Venta por Producto
+
+```{r}
+df %>%
+  group_by(Producto) %>%
+  summarise(Venta_Total = sum(Total_Venta)) %>%
+  arrange(desc(Venta_Total))
+```
+
+**Interpretación**  
+
+- El producto con mayor volumen de venta total es Smartphone.
+
+- Le siguen de cerca productos como Monitor, generando un alto ingreso acumulado.
+
+- Se detecta un patrón de concentración: la mayoría de las ventas se concentra en 2–3 productos clave, lo cual sugiere una dependencia comercial en artículos tecnológicos de mayor valor.
+
+- La diferencia entre el producto más vendido y el menos vendido es aproximadamente del 30%, lo cual es significativa desde una perspectiva de estrategia de catálogo.
+
+## Total de Venta por País
+
+```{r}
+df %>%
+  group_by(Pais) %>%
+  summarise(Venta_Total = sum(Total_Venta)) %>%
+  arrange(desc(Venta_Total))
+```
+
+**Interpretación**  
+
+- El país con mayor volumen de ventas totales es Argentina.
+
+- Sin embargo, la diferencia entre países no es sustancial: las cifras de venta se mantienen relativamente parejas, con variaciones entre 5% y 15%.
+
+- Mercados como Brasil, Chile y Canadá presentan un volumen de venta ligeramente inferior, lo que podría deberse a menor demanda o participación en el dataset.
+
+- Este comportamiento sugiere una distribución regional equilibrada, sin dependencia extrema de una sola región.
+
+## Tabla Cruzada: Producto vs País
+```{r}
+pivot_table <- df %>%
+  group_by(Producto, Pais) %>%
+  summarise(Venta_Total = sum(Total_Venta)) %>%
+  pivot_wider(names_from = Pais, values_from = Venta_Total, values_fill = 0)
+
+pivot_table
+```
+
+**Interpretación**  
+
+- En Argentina, los productos con mayor volumen de venta son Smartphone y Monitor.
+
+- En Chile y México, el Smartphone también lidera en ventas, consolidándose como el producto más dominante en la región.
+
+- En contraste, países como Canadá y Estados Unidos presentan mayor volumen de ventas en accesorios de cómputo como Mouse.
+
+- Brasil muestra una concentración destacada en Teclado, lo que podría deberse a patrones de consumo más funcionales o presupuestos más bajos.
+
+- Esta distribución revela que los Smartphones predominan en tres de los seis mercados, mientras que accesorios dominan en los demás.
+
+##  Heatmap: Total de Venta por Producto y País
+```{python}
+plt.figure(figsize=(10,6))
+sns.heatmap(tabla_cruzada, cmap='Blues', annot=True, fmt=".0f")
+plt.title("Total de Venta por Producto y País")
+plt.xlabel("País")
+plt.ylabel("Producto")
+plt.tight_layout()
+plt.show()
+
+```
+**Interpretación**  
+- El heatmap confirma que Smartphone es el producto con mayor volumen de venta en la mayoría de los países, destacando principalmente en México, Chile y Argentina.
+
+- Los accesorios de cómputo (mouse, teclado, audífonos) presentan un comportamiento más disperso, con ventas más equilibradas entre países pero sin alcanzar los niveles de los smartphones.
+
+- Esta visualización permite detectar concentración regional por producto, lo cual puede ser clave para decisiones de marketing o inventario segmentado.
+
+## Gráfica de Barras Horizontales: Total de Venta por Producto
+```{r}
+df %>%
+  group_by(Producto) %>%
+  summarise(Venta_Total = sum(Total_Venta)) %>%
+  arrange(Venta_Total) %>%
+  ggplot(aes(x = Venta_Total, y = reorder(Producto, Venta_Total))) +
+  geom_col(fill = "#3c8dbc") +
+  labs(title = "Total de Ventas por Producto", x = "Total de Venta ($)", y = "Producto") +
+  theme_minimal()
+```
+
+**Interpretación**  
+- La visualización deja claro que los productos Smartphone y Monitor dominan ampliamente en volumen de ventas.
+
+- Se observa un salto considerable entre los productos más vendidos y los de menor venta, en un rango que varía aproximadamente del 10% al 25%.
+
+- Accesorios como Mouse, Teclado y Audífonos presentan un volumen medio estable, mientras que las laptops quedan rezagadas con respecto al resto del catálogo.
+
+- Esta visualización resalta la importancia estratégica de los productos estrella para mantener el ingreso total de la empresa.
+
+## Gráfica de Barras: Total de Venta por Categoría
+```{r}
+df %>%
+  group_by(Categoria) %>%
+  summarise(Venta_Total = sum(Total_Venta)) %>%
+  ggplot(aes(x = Categoria, y = Venta_Total)) +
+  geom_col(fill = "#f39c12") +
+  scale_y_continuous(labels = scales::dollar_format()) +
+  labs(title = "Total de Ventas por Categoría", x = "Categoría", y = "Total de Venta ($)") +
+  theme_minimal()
+```
+**Interpretación**  
+- La categoría de Electrónica presenta un volumen de ventas ligeramente superior al de Accesorios, lo que indica una preferencia general por dispositivos tecnológicos.
+
+- La diferencia entre ambas categorías es moderada, lo cual refleja que ambos segmentos - tienen una participación activa en las decisiones de compra.
+
+- Se puede inferir que los consumidores tienden a invertir tanto en dispositivos principales (como smartphones) como en accesorios complementarios, manteniendo una demanda balanceada.
+
+
+# Conclusiones Finales
+
+El análisis exploratorio realizado sobre el dataset de ventas permitió identificar patrones clave en el comportamiento de compra por producto, categoría y país.
+
+Entre los principales hallazgos destacan:
+
+- **Smartphones** y **Monitores** son los productos con mayor volumen de ventas, superando por amplio margen al resto del catálogo.
+- La categoría **Electrónica** representa la mayor parte de los ingresos, aunque **Accesorios** también mantiene una presencia significativa, lo que indica un catálogo equilibrado.
+- A nivel regional, **Argentina**, **México** y **Chile** concentran la mayor parte de las ventas, siendo **Argentina** el país con el mayor volumen acumulado.
+- Las **laptops** presentan un rendimiento inferior en comparación con otros productos, lo que podría sugerir oportunidades de mejora en estrategia de marketing o precios.
+- El comportamiento de venta mantiene coherencia con el tipo de producto: mayor cantidad comprada implica mayor valor total, en un patrón casi lineal.
+
+Este análisis sienta las bases para una visualización ejecutiva en dashboard, así como para una posterior modelación predictiva en caso de que se requiera estimar ventas futuras o segmentar clientes.
+
+---
+
+---
